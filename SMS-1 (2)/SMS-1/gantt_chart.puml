@@ -1,0 +1,79 @@
+@startgantt Society Management System - Project Timeline
+
+title Society Management System Development Gantt Chart
+
+project starts 2024-01-01
+
+-- Requirements & Planning --
+[Requirements Analysis] as [RA] lasts 14 days
+[Database Design] as [DBD] lasts 10 days
+[UI/UX Design] as [UID] lasts 12 days
+
+-- Development Phase --
+[Backend Setup (Flask)] as [BS] lasts 7 days
+[Database Implementation] as [DBI] lasts 10 days
+[User Authentication] as [UA] lasts 5 days
+[Admin Module] as [AM] lasts 15 days
+[Resident Module] as [RM] lasts 12 days
+[Tenant Module] as [TM] lasts 10 days
+[Security Module] as [SM] lasts 8 days
+
+-- Features Implementation --
+[Visitor Management] as [VM] lasts 10 days
+[Complaint System] as [CS] lasts 12 days
+[Maintenance Billing] as [MB] lasts 15 days
+[Parking Management] as [PM] lasts 8 days
+[Event Management] as [EM] lasts 10 days
+[Charity Module] as [CM] lasts 8 days
+[Emergency System] as [ES] lasts 6 days
+[Reports & Analytics] as [RA2] lasts 10 days
+
+-- Testing & Deployment --
+[Unit Testing] as [UT] lasts 7 days
+[Integration Testing] as [IT] lasts 10 days
+[User Acceptance Testing] as [UAT] lasts 5 days
+[Bug Fixing] as [BF] lasts 7 days
+[Deployment] as [DEP] lasts 3 days
+[Documentation] as [DOC] lasts 5 days
+
+-- Dependencies --
+[RA] -> [DBD]
+[RA] -> [UID]
+[DBD] -> [DBI]
+[UID] -> [BS]
+[BS] -> [DBI]
+[DBI] -> [UA]
+[UA] -> [AM]
+[UA] -> [RM]
+[UA] -> [TM]
+[UA] -> [SM]
+[AM] -> [VM]
+[AM] -> [CS]
+[AM] -> [MB]
+[AM] -> [PM]
+[AM] -> [EM]
+[AM] -> [CM]
+[AM] -> [ES]
+[AM] -> [RA2]
+[RM] -> [VM]
+[RM] -> [CS]
+[RM] -> [MB]
+[TM] -> [VM]
+[TM] -> [CS]
+[TM] -> [MB]
+[SM] -> [VM]
+[VM] -> [UT]
+[CS] -> [UT]
+[MB] -> [UT]
+[PM] -> [UT]
+[EM] -> [UT]
+[CM] -> [UT]
+[ES] -> [UT]
+[RA2] -> [UT]
+[UT] -> [IT]
+[IT] -> [UAT]
+[UAT] -> [BF]
+[BF] -> [DEP]
+[DEP] -> [DOC]
+
+@endgantt

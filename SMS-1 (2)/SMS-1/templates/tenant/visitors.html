@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Visitors - Tenant Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Visitor Management</h2>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Register New Visitor</h5>
+                </div>
+                <div class="card-body">
+                    <form id="visitorForm">
+                        <div class="mb-3">
+                            <label for="visitorName" class="form-label">Visitor Name</label>
+                            <input type="text" class="form-control" id="visitorName" required pattern="[a-zA-Z\s]+" title="Name should contain only letters and spaces">
+                        </div>
+                        <div class="mb-3">
+                            <label for="visitorContact" class="form-label">Contact Number</label>
+                            <input type="tel" class="form-control" id="visitorContact" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number">
+                        </div>
+                        <div class="mb-3">
+                            <label for="visitPurpose" class="form-label">Purpose of Visit</label>
+                            <select class="form-select" id="visitPurpose" required>
+                                <option value="">Select Purpose</option>
+                                <option value="Personal">Personal</option>
+                                <option value="Delivery">Delivery</option>
+                                <option value="Service">Service</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="otherPurposeDiv" style="display: none;">
+                            <label for="otherPurpose" class="form-label">Specify Purpose</label>
+                            <input type="text" class="form-control" id="otherPurpose">
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary w-75 me-2">
+                                <i class="fas fa-user-plus"></i> Register Visitor
+                            </button>
+                            <button type="button" class="btn btn-info w-25" id="voice-command-btn" title="Enable voice commands">
+                                <i class="fas fa-microphone"></i> Voice
+                            </button>
+                        </div>
+                    </form>
+                    <div id="voice-status" class="mt-3" style="display: none;">
+                        <div id="voice-status-text" class="alert alert-info"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Register all visitors before their arrival</li>
+                        <li>Provide accurate contact information</li>
+                        <li>Visitors will be notified to security</li>
+                        <li>Security will verify and allow entry</li>
+                        <li>Mark exit when visitor leaves</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Visitors must be registered at least 30 minutes before arrival
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Visitor History</h4>
+            <div class="card">
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> <strong>Tip:</strong> Use voice commands to fill the form. Say "register visitor", "purpose personal", "submit form", etc.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Purpose</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for visitor in visitors %}
+                                <tr>
+                                    <td>{{ visitor[2] }}</td>
+                                    <td>{{ visitor[3] }}</td>
+                                    <td>{{ visitor[4] }}</td>
+                                    <td>{{ visitor[5] }}</td>
+                                    <td>{{ visitor[6] }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if visitor[7] == 'Pending' %}warning{% elif visitor[7] == 'Approved' %}success{% elif visitor[7] == 'Rejected' %}danger{% elif visitor[7] == 'Exited' %}secondary{% endif %}">
+                                            {{ visitor[7] }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if voice is enabled
+    let isVoiceEnabled = localStorage.getItem('voiceEnabled') === 'true';
+    
+    // Initialize voice status
+    if (isVoiceEnabled) {
+        document.getElementById('voice-command-btn').innerHTML = '<i class="fas fa-microphone-alt"></i> Stop Voice';
+    }
+    
+    // Welcome message for accessibility (only if voice is enabled)
+    if (isVoiceEnabled) {
+        setTimeout(() => {
+            speakMessage('Welcome to Visitor Management. Please register your visitor or use voice command.');
+        }, 1000);
+    }
+    
+    // Voice command functionality
+    const voiceCommandBtn = document.getElementById('voice-command-btn');
+    const voiceStatus = document.getElementById('voice-status');
+    const voiceStatusText = document.getElementById('voice-status-text');
+    
+    let recognition;
+    let isListening = false;
+    
+    // Check if browser supports speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = function() {
+            isListening = true;
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-info';
+            voiceStatusText.textContent = 'Listening... Please speak now.';
+        };
+        
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript.toLowerCase().trim();
+            voiceStatusText.textContent = 'Command recognized: ' + transcript;
+            
+            // Process voice command
+            processVoiceCommand(transcript);
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 2000);
+        };
+        
+        recognition.onerror = function(event) {
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-danger';
+            voiceStatusText.textContent = 'Error occurred: ' + event.error;
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 3000);
+        };
+        
+        recognition.onend = function() {
+            isListening = false;
+        };
+        
+        voiceCommandBtn.addEventListener('click', function() {
+            if (isListening) {
+                recognition.stop();
+                voiceCommandBtn.innerHTML = '<i class="fas fa-microphone"></i> Voice Command';
+            } else {
+                recognition.start();
+                voiceCommandBtn.innerHTML = '<i class="fas fa-microphone-alt"></i> Stop Listening';
+            }
+        });
+    } else {
+        voiceCommandBtn.disabled = true;
+        voiceCommandBtn.title = 'Voice commands not supported in this browser';
+        voiceStatus.style.display = 'block';
+        voiceStatus.className = 'alert alert-warning';
+        voiceStatusText.textContent = 'Voice commands are not supported in this browser. Please use Chrome or Edge.';
+    }
+    
+    function processVoiceCommand(command) {
+        // Check for common commands
+        if (command.includes('register') || command.includes('visitor') || command.includes('add visitor')) {
+            speakMessage('Please fill in the visitor details in the form.');
+            document.getElementById('visitorName').focus();
+        } else if (command.includes('name') || command.includes('visitor name')) {
+            speakMessage('Please speak the visitor name after the beep.');
+            document.getElementById('visitorName').focus();
+        } else if (command.includes('contact') || command.includes('phone') || command.includes('mobile')) {
+            speakMessage('Please speak the contact number after the beep.');
+            document.getElementById('visitorContact').focus();
+        } else if (command.includes('purpose') || command.includes('reason') || command.includes('why')) {
+            speakMessage('Please select the purpose of visit from the dropdown.');
+            document.getElementById('visitPurpose').focus();
+        } else if (command.includes('personal')) {
+            document.getElementById('visitPurpose').value = 'Personal';
+            speakMessage('Personal purpose selected');
+        } else if (command.includes('delivery')) {
+            document.getElementById('visitPurpose').value = 'Delivery';
+            speakMessage('Delivery purpose selected');
+        } else if (command.includes('service')) {
+            document.getElementById('visitPurpose').value = 'Service';
+            speakMessage('Service purpose selected');
+        } else if (command.includes('other')) {
+            document.getElementById('visitPurpose').value = 'Other';
+            document.getElementById('otherPurposeDiv').style.display = 'block';
+            speakMessage('Other purpose selected, please specify');
+            document.getElementById('otherPurpose').focus();
+        } else if (command.includes('submit') || command.includes('register') || command.includes('save')) {
+            speakMessage('Submitting the visitor registration form.');
+            document.getElementById('visitorForm').dispatchEvent(new Event('submit'));
+        } else {
+            // If no match found, show error
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-warning';
+            voiceStatusText.textContent = 'Command not recognized: "' + command + '". Try saying "register visitor", "add visitor", "submit form", or "purpose personal".';
+
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    // Toggle other purpose field
+    document.getElementById('visitPurpose').addEventListener('change', function() {
+        const otherPurposeDiv = document.getElementById('otherPurposeDiv');
+        if (this.value === 'Other') {
+            otherPurposeDiv.style.display = 'block';
+        } else {
+            otherPurposeDiv.style.display = 'none';
+        }
+    });
+    
+    // Visitor form submission
+    document.getElementById('visitorForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        // First validate the form using our enhanced validation
+        if (!validateForm(form)) {
+            return;
+        }
+        
+        // Continue with form submission
+            // Get form values
+            const visitorName = document.getElementById('visitorName').value.trim();
+            const visitorContact = document.getElementById('visitorContact').value.trim();
+            const visitPurpose = document.getElementById('visitPurpose').value;
+            const otherPurpose = document.getElementById('otherPurpose').value.trim();
+            
+            // Use "Other" purpose if selected
+            const finalPurpose = visitPurpose === 'Other' ? otherPurpose : visitPurpose;
+            
+        // Send data to server
+        const formData = {
+            visitor_name: visitorName,
+            contact: visitorContact,
+            purpose: finalPurpose
+        };
+
+        // Show processing message
+        showNotification('Registering visitor...', 'info');
+
+        fetch('/tenant/visitors/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    form.reset();
+                    document.getElementById('otherPurposeDiv').style.display = 'none';
+                    
+                    // Reload the page to show updated visitor history
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showNotification(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Registration failed. Please try again.', 'danger');
+            });
+    });
+    
+    // Form validation function
+    function validateForm(form) {
+        const visitorName = document.getElementById('visitorName').value.trim();
+        const visitorContact = document.getElementById('visitorContact').value.trim();
+        const visitPurpose = document.getElementById('visitPurpose').value;
+        const otherPurpose = document.getElementById('otherPurpose').value.trim();
+        
+        if (!visitorName) {
+            showNotification('Please enter visitor name', 'warning');
+            return false;
+        }
+        
+        // Validate contact (should be 10 digits)
+        const contactDigits = visitorContact.replace(/\D/g, '');
+        if (contactDigits.length !== 10) {
+            showNotification('Please enter a valid 10-digit phone number', 'warning');
+            return false;
+        }
+        
+        if (!visitPurpose) {
+            showNotification('Please select purpose of visit', 'warning');
+            return false;
+        }
+        
+        if (visitPurpose === 'Other' && !otherPurpose) {
+            showNotification('Please specify the purpose of visit', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+    // Function to show notifications
+    function showNotification(message, type) {
+        // Remove existing notifications
+        const existingAlerts = document.querySelectorAll('.notification-alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show notification-alert position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+
+{% endblock %}

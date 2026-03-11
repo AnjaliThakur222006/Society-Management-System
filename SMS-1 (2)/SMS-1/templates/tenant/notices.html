@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Tenant Notices - Smart Society Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">Notices & Announcements</h1>
+            
+            <!-- Notices List -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Society Notices</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="noticesTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Content</th>
+                                    <th>Date</th>
+                                    <th>Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for notice in notices %}
+                                <tr>
+                                    <td>{{ notice.title }}</td>
+                                    <td>{{ notice.content[:100] }}{% if notice.content|length > 100 %}...{% endif %}</td>
+                                    <td>{{ notice.notice_date }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if notice.priority == 'Urgent' %}bg-danger
+                                            {% elif notice.priority == 'High' %}bg-warning
+                                            {% elif notice.priority == 'Normal' %}bg-success
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ notice.priority }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No notices available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tenant notices specific scripts can go here
+</script>
+{% endblock %}

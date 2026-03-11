@@ -1,0 +1,183 @@
+@startuml System Flowchart - Society Management System
+
+title Society Management System - Main Process Flowchart
+
+start
+
+:User accesses SMS;
+
+if (User Authentication?) then (Required)
+    :Login Page;
+    :Enter Credentials;
+    if (Valid Credentials?) then (Yes)
+        :Session Created;
+    else (No)
+        :Error Message;
+        :Retry Login;
+        stop
+    endif
+else (Already Logged In)
+    :Check Session;
+endif
+
+:Determine User Role;
+if (User Role?) then (Admin)
+    :Admin Dashboard;
+    if (Admin Action?) then (User Management)
+        :Manage Residents;
+        :Manage Blocks/Flats;
+        :User Permissions;
+    elseif (Society Settings)
+        :Update Society Info;
+        :Configure System;
+        :Emergency Contacts;
+    elseif (Financial Management)
+        :Generate Bills;
+        :Track Payments;
+        :Financial Reports;
+    elseif (Complaint Management)
+        :View Complaints;
+        :Assign Tasks;
+        :Monitor Resolution;
+    elseif (Reports & Analytics)
+        :Generate Reports;
+        :View Analytics;
+        :Export Data;
+    endif
+
+elseif (Resident/Owner)
+    :Resident Dashboard;
+    if (Resident Action?) then (Profile Management)
+        :Update Profile;
+        :Change Password;
+        :Upload Photo;
+    elseif (Visitor Management)
+        :Register Visitor;
+        :View Visit History;
+        :Update Visitor Status;
+    elseif (Complaints)
+        :Submit Complaint;
+        :Track Status;
+        :View Resolution;
+    elseif (Maintenance Bills)
+        :View Pending Bills;
+        :Make Payment;
+        :Download Receipt;
+    elseif (Events)
+        :View Events;
+        :Register for Event;
+        :View Registrations;
+    elseif (Charity)
+        :View Campaigns;
+        :Make Donation;
+        :View Contribution;
+    elseif (Notices)
+        :View Announcements;
+        :Read Important Notices;
+    endif
+
+elseif (Tenant)
+    :Tenant Dashboard;
+    note right
+        Similar to Resident but
+        with Tenant-specific
+        permissions
+    end note
+    if (Tenant Action?) then (Profile Management)
+        :Update Profile;
+        :Change Password;
+        :Upload Photo;
+    elseif (Visitor Management)
+        :Register Visitor;
+        :View Visit History;
+        :Update Visitor Status;
+    elseif (Complaints)
+        :Submit Complaint;
+        :Track Status;
+        :View Resolution;
+    elseif (Maintenance Bills)
+        :View Pending Bills;
+        :Make Payment;
+        :Download Receipt;
+    elseif (Events)
+        :View Events;
+        :Register for Event;
+        :View Registrations;
+    elseif (Charity)
+        :View Campaigns;
+        :Make Donation;
+        :View Contribution;
+    elseif (Notices)
+        :View Announcements;
+        :Read Important Notices;
+    endif
+
+elseif (Security)
+    :Security Dashboard;
+    if (Security Action?) then (Visitor Control)
+        :Check Pending Visitors;
+        :Verify Identity;
+        if (Approved?) then (Yes)
+            :Allow Entry;
+            :Capture Photo;
+            :Log Entry Time;
+        else (No)
+            :Deny Entry;
+            :Notify Resident;
+        endif
+    elseif (Delivery Management)
+        :Receive Delivery;
+        :Verify Details;
+        :Notify Resident;
+        :Log Delivery;
+    elseif (Emergency Response)
+        :Receive Alert;
+        :Assess Situation;
+        :Contact Emergency Services;
+        :Coordinate Response;
+        :Log Incident;
+    endif
+endif
+
+:Perform Action;
+if (Database Operation?) then (Required)
+    :Connect to Database;
+    :Execute Query;
+    if (Success?) then (Yes)
+        :Commit Transaction;
+        :Log Activity;
+    else (No)
+        :Rollback Transaction;
+        :Error Handling;
+        :User Notification;
+    endif
+endif
+
+if (Notification Required?) then (Yes)
+    :Generate Notification;
+    if (Email/SMS?) then (Yes)
+        :Send Email/SMS;
+    endif
+    :Update Dashboard;
+endif
+
+if (Report Generation?) then (Yes)
+    :Collect Data;
+    :Process Information;
+    :Generate PDF/Excel;
+    :Send to User;
+endif
+
+:Log User Activity;
+:Update Session;
+
+if (Logout?) then (Yes)
+    :Clear Session;
+    :Redirect to Login;
+    stop
+else (No)
+    :Continue Using System;
+    ->User accesses SMS;
+endif
+
+@enduml

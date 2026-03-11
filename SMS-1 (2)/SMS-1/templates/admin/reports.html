@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics - Smart Society{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Reports & Analytics</h2>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Daily Activity Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="dailyActivityChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Monthly Maintenance Collection</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="paymentChart" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Visitor Trends</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="visitorChart" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Per-Resident Payments</h5>
+                    <div>
+                        <select id="residentSelect" class="form-select form-select-sm">
+                            <option value="">Select resident...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="residentChart" height="60"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    speakMessage('Reports and analytics page loaded. View daily activity trends and financial data.');
+    
+    // Prepare data for charts
+    // Note: Data is passed from Flask template as JSON-safe strings
+    const visitorData = JSON.parse('{{ visitor_data | tojson | safe }}');
+    const complaintData = JSON.parse('{{ complaint_data | tojson | safe }}');
+    const deliveryData = JSON.parse('{{ delivery_data | tojson | safe }}');
+    const paymentData = JSON.parse('{{ payment_data | tojson | safe }}');
+    const paymentByResident = JSON.parse('{{ payment_by_resident | tojson | safe }}');
+    
+    // Process data for daily activity chart
+    const dates = [];
+    const visitorCounts = [];
+    const complaintCounts = [];
+    const deliveryCounts = [];
+    
+    // Combine all dates
+    const allDates = new Set();
+    visitorData.forEach(item => allDates.add(item[0]));
+    complaintData.forEach(item => allDates.add(item[0]));
+    deliveryData.forEach(item => allDates.add(item[0]));
+    
+    // Sort dates
+    const sortedDates = Array.from(allDates).sort();
+    
+    // Fill in data arrays
+    sortedDates.forEach(date => {
+        dates.push(date);
+        const visitorItem = visitorData.find(item => item[0] === date);
+        const complaintItem = complaintData.find(item => item[0] === date);
+        const deliveryItem = deliveryData.find(item => item[0] === date);
+        
+        visitorCounts.push(visitorItem ? visitorItem[1] : 0);
+        complaintCounts.push(complaintItem ? complaintItem[1] : 0);
+        deliveryCounts.push(deliveryItem ? deliveryItem[1] : 0);
+    });
+    
+    // Daily Activity Chart
+    const ctx1 = document.getElementById('dailyActivityChart').getContext('2d');
+    const dailyActivityChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: 'Visitors',
+                    data: visitorCounts,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Complaints',
+                    data: complaintCounts,
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Deliveries',
+                    data: deliveryCounts,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Daily Activity Trends'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Payment Chart
+    const paymentLabels = paymentData.map(item => item[0]);
+    const paymentAmounts = paymentData.map(item => item[1]);
+    
+    const ctx2 = document.getElementById('paymentChart').getContext('2d');
+    const paymentChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: paymentLabels,
+            datasets: [{
+                label: 'Maintenance Collection (₹)',
+                data: paymentAmounts,
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Monthly Maintenance Collection'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Visitor Chart
+    const visitorLabels = visitorData.slice(0, 10).map(item => item[0]);
+    const visitorValues = visitorData.slice(0, 10).map(item => item[1]);
+    
+    const ctx3 = document.getElementById('visitorChart').getContext('2d');
+    const visitorChart = new Chart(ctx3, {
+        type: 'line',
+        data: {
+            labels: visitorLabels,
+            datasets: [{
+                label: 'Daily Visitors',
+                data: visitorValues,
+                borderColor: 'rgb(255, 159, 64)',
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Recent Visitor Trends'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Populate resident selector
+    const residentSelect = document.getElementById('residentSelect');
+    if (residentSelect) {
+        paymentByResident.forEach(item => {
+            // item: [resident_id, name, flat_number, total_paid]
+            const opt = document.createElement('option');
+            opt.value = item[0];
+            opt.text = `${item[1]} (${item[2]}) — ₹${item[3] ? item[3].toFixed(2) : '0.00'}`;
+            residentSelect.appendChild(opt);
+        });
+
+        let residentChart = null;
+        function renderResidentChart(months, amounts) {
+            const ctx = document.getElementById('residentChart').getContext('2d');
+            if (residentChart) residentChart.destroy();
+            residentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Monthly Paid (₹)',
+                        data: amounts,
+                        borderColor: 'rgb(40, 167, 69)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { title: { display: true, text: 'Resident Monthly Payments' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        residentSelect.addEventListener('change', function() {
+            const id = this.value;
+            if (!id) {
+                // clear chart
+                renderResidentChart([], []);
+                return;
+            }
+
+            fetch(`/admin/reports/resident/${id}`)
+                .then(r => r.json())
+                .then(data => {
+                    // data: [[month, total], ...]
+                    const months = data.map(d => d[0]);
+                    const amounts = data.map(d => d[1]);
+                    renderResidentChart(months, amounts);
+                })
+                .catch(err => {
+                    console.error('Failed to fetch resident data', err);
+                });
+        });
+    }
+});
+</script>
+{% endblock %}

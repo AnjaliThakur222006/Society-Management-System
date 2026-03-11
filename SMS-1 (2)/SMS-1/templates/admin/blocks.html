@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Blocks Management - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Block Management</h2>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Add New Block</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addBlockForm">
+                        <div class="mb-3">
+                            <label for="blockName" class="form-label">Block Name</label>
+                            <input type="text" class="form-control" id="blockName" required placeholder="e.g., A, B, C">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Block</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Add Flats to Block</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addFlatsForm">
+                        <div class="mb-3">
+                            <label for="blockSelect" class="form-label">Select Block</label>
+                            <select class="form-select" id="blockSelect" required>
+                                <option value="">Select Block</option>
+                                {% for block in blocks %}
+                                <option value="{{ block[0] }}">{{ block[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fromFlat" class="form-label">From Flat Number</label>
+                            <input type="number" class="form-control" id="fromFlat" required placeholder="e.g., 101">
+                        </div>
+                        <div class="mb-3">
+                            <label for="toFlat" class="form-label">To Flat Number</label>
+                            <input type="number" class="form-control" id="toFlat" required placeholder="e.g., 120">
+                        </div>
+                        <button type="submit" class="btn btn-success">Add Flats</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Block Statistics</h4>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Block Name</th>
+                                    <th>Total Flats</th>
+                                    <th>Vacant Flats</th>
+                                    <th>Occupied Flats</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in block_stats %}
+                                <tr>
+                                    <td>{{ stat[0] }}</td>
+                                    <td>{{ stat[1] }}</td>
+                                    <td>{{ stat[2] }}</td>
+                                    <td>{{ stat[1] - stat[2] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4 class="mb-3">All Blocks</h4>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Block Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for block in blocks %}
+                                <tr>
+                                    <td>{{ block[0] }}</td>
+                                    <td>{{ block[1] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add block form submission
+    document.getElementById('addBlockForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const blockName = document.getElementById('blockName').value.trim();
+        
+        if (!blockName) {
+            showNotification('Please enter a block name', 'warning');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('block_name', blockName);
+        
+        fetch('/admin/blocks/add', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                document.getElementById('addBlockForm').reset();
+                // Reload the page to show updated data
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showNotification('Error adding block: ' + error.message, 'danger');
+        });
+    });
+    
+    // Add flats form submission
+    document.getElementById('addFlatsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const blockId = document.getElementById('blockSelect').value;
+        const fromFlat = document.getElementById('fromFlat').value.trim();
+        const toFlat = document.getElementById('toFlat').value.trim();
+        
+        if (!blockId || !fromFlat || !toFlat) {
+            showNotification('Please fill in all fields', 'warning');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('block_id', blockId);
+        formData.append('from_flat', fromFlat);
+        formData.append('to_flat', toFlat);
+        
+        fetch('/admin/flats/add', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                document.getElementById('addFlatsForm').reset();
+            } else {
+                showNotification(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showNotification('Error adding flats: ' + error.message, 'danger');
+        });
+    });
+    
+    // Function to show notifications
+    function showNotification(message, type) {
+        // Remove existing notifications
+        const existingAlerts = document.querySelectorAll('.notification-alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show notification-alert position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
