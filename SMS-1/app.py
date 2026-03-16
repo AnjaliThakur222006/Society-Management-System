@@ -1091,7 +1091,7 @@ def admin_residents():
         database='society'
     )
     c = conn.cursor()
-    c.execute("""SELECT u.name, u.email, u.phone, r.flat_number, r.resident_type
+    c.execute("""SELECT u.name, u.email, u.phone, r.flat_number, r.resident_type, u.id as user_id
                  FROM users u
                  JOIN residents r ON u.id = r.user_id""")
     residents = c.fetchall()
@@ -1778,6 +1778,76 @@ def admin_comprehensive_report():
     response = make_response(pdf_buffer.getvalue())
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'attachment; filename=society_comprehensive_report.pdf'
+    return response
+
+# Resident maintenance report PDF (FIX for download button)
+@app.route('/resident/maintenance/report')
+def resident_maintenance_report():
+    if 'user_id' not in session or session['role'] not in ['Owner', 'Tenant']:
+        return redirect(url_for('login'))
+
+    from reports import generate_resident_payment_report_pdf
+    pdf_buffer = generate_resident_payment_report_pdf(session['user_id'])
+
+    response = make_response(pdf_buffer.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment; filename=payment_report.pdf'
+    return response
+
+# Individual payment receipt PDF (for per-payment download buttons)
+@app.route('/resident/receipt/<payment_id>')
+def resident_receipt(payment_id):
+    if 'user_id' not in session or session['role'] not in ['Owner', 'Tenant']:
+        return redirect(url_for('login'))
+
+    conn = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='anjali@2',
+        database='society'
+    )
+    c = conn.cursor()
+    c.execute("""
+        SELECT p.id, p.receipt_number, p.amount, p.payment_date, p.payment_method, p.status,
+               u.name, r.flat_number
+        FROM payments p 
+        JOIN residents r ON p.resident_id = r.id 
+        JOIN users u ON r.user_id = u.id 
+        WHERE p.id = %s OR p.receipt_number = %s AND r.user_id = %s
+    """, (payment_id, payment_id, session['user_id']))
+    payment = c.fetchone()
+    c.close()
+    conn.close()
+    
+    if not payment:
+        return "Receipt not found", 404
+    
+    # Get society settings
+    society_settings = get_society_settings()
+    
+    receipt_data = {
+        'id': payment[0],
+        'receipt_number': payment[1] or f"REC-{payment_id}",
+        'amount': payment[2],
+        'payment_date': payment[3] or datetime.now().strftime('%Y-%m-%d'),
+        'payment_method': payment[4] or 'Online',
+        'status': payment[5],
+        'name': payment[6],
+        'flat_number': payment[7],
+        'description': 'Maintenance Payment',
+        # Society info
+        'society_name': society_settings['society_name'],
+        'society_address': society_settings['society_address'],
+        'society_phone': society_settings['society_phone'],
+        'society_email': society_settings['society_email']
+    }
+    
+    from reports import generate_individual_receipt_pdf
+    pdf_buffer = generate_individual_receipt_pdf(receipt_data)
+    
+    response = make_response(pdf_buffer.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=receipt_{receipt_data["receipt_number"]}.pdf'
     return response
 
 # Admin view payment receipt
