@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance Bills - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Maintenance Bills Management</h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" onclick="downloadReport()">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateBillModal">
+                        <i class="fas fa-plus"></i> Generate Bill
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Resident Name</th>
+                                    <th>Flat Number</th>
+                                    <th>Amount (₹)</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Late Fine (₹)</th>
+                                    <th>Created Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bill in bills %}
+                                <tr>
+                                    <td>{{ bill[0] }}</td>
+                                    <td><strong>{{ bill[1] }}</strong></td>
+                                    <td>{{ bill[2] }}</td>
+                                    <td>₹{{ "%.2f"|format(bill[3]) }}</td>
+                                    <td>{{ bill[4] }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if bill[5] == 'Paid' %}success{% else %}warning{% endif %}">
+                                            {{ bill[5] }}
+                                        </span>
+                                    </td>
+                                    <td>₹{{ "%.2f"|format(bill[6]) }}</td>
+                                    <td>{{ bill[7] }}</td>
+                                    <td>
+                                        {% if bill[5] != 'Paid' %}
+                                            <button class="btn btn-sm btn-success me-1 mark-paid-btn" data-bill-id="{{ bill[0] }}" title="Mark as Paid">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        {% endif %}
+                                        <button class="btn btn-sm btn-danger delete-bill-btn" data-bill-id="{{ bill[0] }}" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Bill Modal -->
+<div class="modal fade" id="generateBillModal" tabindex="-1" aria-labelledby="generateBillModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="generateBillForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="generateBillModalLabel">Generate Maintenance Bill</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="residentSelect" class="form-label">Resident *</label>
+                                <select class="form-select" id="residentSelect" name="resident_id" required>
+                                    <option value="">Select Resident</option>
+                                    {% for resident in residents %}
+                                    <option value="{{ resident[0] }}">{{ resident[1] }} ({{ resident[2] }})</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Please select a resident</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="billAmount" class="form-label">Amount (₹) *</label>
+                                <input type="number" class="form-control" id="billAmount" name="amount" min="0" step="0.01" required>
+                                <div class="invalid-feedback">Please enter a valid amount</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="dueDate" class="form-label">Due Date *</label>
+                        <input type="date" class="form-control" id="dueDate" name="due_date" required>
+                        <div class="invalid-feedback">Please select a due date</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Generate Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Monthly Bills Modal -->
+<div class="modal fade" id="generateMonthlyBillsModal" tabindex="-1" aria-labelledby="generateMonthlyBillsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="generateMonthlyBillsForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="generateMonthlyBillsModalLabel">Generate Monthly Bills for All Residents</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="monthlyBillAmount" class="form-label">Amount per Resident (₹) *</label>
+                        <input type="number" class="form-control" id="monthlyBillAmount" name="amount" min="0" step="0.01" required>
+                        <div class="form-text">This amount will be applied to all residents</div>
+                        <div class="invalid-feedback">Please enter a valid amount</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="monthlyDueDate" class="form-label">Due Date *</label>
+                        <input type="date" class="form-control" id="monthlyDueDate" name="due_date" required>
+                        <div class="invalid-feedback">Please select a due date</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Generate All Bills</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all residents for the dropdown
+    fetch('/admin/residents/json')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Populate resident dropdown if it exists
+                const residentSelect = document.getElementById('residentSelect');
+                if (residentSelect) {
+                    // Clear existing options except the first one
+                    while (residentSelect.options.length > 1) {
+                        residentSelect.remove(1);
+                    }
+
+                    data.residents.forEach(resident => {
+                        const option = document.createElement('option');
+                        option.value = resident.id;
+                        option.textContent = `${resident.name} (${resident.flat_number})`;
+                        residentSelect.appendChild(option);
+                    });
+                }
+            } else {
+                console.error('Failed to load residents:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading residents:', error);
+        });
+
+    // Generate single bill form submission
+    const generateBillForm = document.getElementById('generateBillForm');
+    if (generateBillForm) {
+        generateBillForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(generateBillForm);
+            
+            // Validate required fields
+            if (!validateBillForm()) {
+                return;
+            }
+            
+            fetch('/admin/maintenance-bills/generate', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    var modalElement = document.getElementById('generateBillModal');
+                    var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    generateBillForm.reset();
+                    // Reload the page to show the new bill
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Failed to generate bill. Please try again.', 'danger');
+            });
+        });
+    }
+    
+    // Generate monthly bills form submission
+    const generateMonthlyBillsForm = document.getElementById('generateMonthlyBillsForm');
+    if (generateMonthlyBillsForm) {
+        generateMonthlyBillsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(generateMonthlyBillsForm);
+            
+            // Validate required fields
+            if (!validateMonthlyBillForm()) {
+                return;
+            }
+            
+            fetch('/admin/maintenance-bills/generate-monthly', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    var modalElement = document.getElementById('generateMonthlyBillsModal');
+                    var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    generateMonthlyBillsForm.reset();
+                    // Reload the page to show the new bills
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Failed to generate bills. Please try again.', 'danger');
+            });
+        });
+    }
+    
+    // Handle mark paid button clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.mark-paid-btn')) {
+            const billId = e.target.closest('.mark-paid-btn').dataset.billId;
+            markBillPaid(billId);
+        }
+    });
+    
+    // Handle delete bill button clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-bill-btn')) {
+            const billId = e.target.closest('.delete-bill-btn').dataset.billId;
+            deleteBill(billId);
+        }
+    });
+});
+
+function validateBillForm() {
+    let isValid = true;
+    const residentSelect = document.getElementById('residentSelect');
+    const billAmount = document.getElementById('billAmount');
+    const dueDate = document.getElementById('dueDate');
+    
+    // Reset validation classes
+    [residentSelect, billAmount, dueDate].forEach(field => {
+        field.classList.remove('is-invalid');
+    });
+    
+    // Validate resident selection
+    if (!residentSelect.value) {
+        residentSelect.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate amount
+    if (!billAmount.value.trim() || parseFloat(billAmount.value) <= 0) {
+        billAmount.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate due date
+    if (!dueDate.value.trim()) {
+        dueDate.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+function validateMonthlyBillForm() {
+    let isValid = true;
+    const monthlyBillAmount = document.getElementById('monthlyBillAmount');
+    const monthlyDueDate = document.getElementById('monthlyDueDate');
+    
+    // Reset validation classes
+    [monthlyBillAmount, monthlyDueDate].forEach(field => {
+        field.classList.remove('is-invalid');
+    });
+    
+    // Validate amount
+    if (!monthlyBillAmount.value.trim() || parseFloat(monthlyBillAmount.value) <= 0) {
+        monthlyBillAmount.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate due date
+    if (!monthlyDueDate.value.trim()) {
+        monthlyDueDate.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+function markBillPaid(billId) {
+    if (confirm('Are you sure this bill has been paid?')) {
+        const formData = new FormData();
+        formData.append('bill_id', billId);
+        formData.append('status', 'Paid');
+        
+        fetch('/admin/maintenance-bills/update-status', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update bill status. Please try again.', 'danger');
+        });
+    }
+}
+
+function deleteBill(billId) {
+    if (confirm('Are you sure you want to delete this bill? This action cannot be undone.')) {
+        const formData = new FormData();
+        formData.append('bill_id', billId);
+        
+        fetch('/admin/maintenance-bills/delete', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to delete bill. Please try again.', 'danger');
+        });
+    }
+}
+
+// Function to show notifications (using Bootstrap alerts)
+function showNotification(message, type) {
+    // Remove existing notifications
+    const existingAlerts = document.querySelectorAll('.notification-alert');
+    existingAlerts.forEach(alert => alert.remove());
+
+    // Create new alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show notification-alert position-fixed`;
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Function to download the report
+function downloadReport() {
+    window.location.href = '/admin/maintenance-bills/report';
+}
+</script>
+{% endblock %}

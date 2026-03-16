@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Society Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Resident Registration</h3>
+                </div>
+                <div class="card-body">
+                    <form id="registrationForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required pattern="[a-zA-Z\s]+" title="Name should contain only letters and spaces">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="block" class="form-label">Block</label>
+                            <select class="form-select" id="block" name="block" required>
+                                <option value="">Select Block</option>
+                                {% for block in blocks %}
+                                <option value="{{ block[0] }}">{{ block[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="flat_number" class="form-label">Flat Number</label>
+                            <select class="form-select" id="flat_number" name="flat_number" required>
+                                <option value="">Select Flat</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="mobile" class="form-label">Mobile Number</label>
+                            <input type="tel" class="form-control" id="mobile" name="mobile" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="user_type" class="form-label">User Type</label>
+                            <select class="form-select" id="user_type" name="user_type" required>
+                                <option value="">Select Type</option>
+                                <option value="Owner">Owner</option>
+                                <option value="Tenant">Tenant</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="6" title="Password must be at least 6 characters long">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="profile_pic" class="form-label">Profile Picture (Optional)</label>
+                            <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/*">
+                            <div class="form-text">Upload a profile picture (JPG, PNG, GIF)</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Register</button>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('login') }}">Already have an account? Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const blockSelect = document.getElementById('block');
+    const flatSelect = document.getElementById('flat_number');
+    
+    // When block is selected, load available flats
+    blockSelect.addEventListener('change', function() {
+        const blockId = this.value;
+        flatSelect.innerHTML = '<option value="">Select Flat</option>';
+
+        if (blockId) {
+            // Show loading indicator
+            const loadingOption = document.createElement('option');
+            loadingOption.textContent = "Loading...";
+            loadingOption.disabled = true;
+            flatSelect.appendChild(loadingOption);
+            
+            fetch(`/get_flats/${blockId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(flats => {
+                    // Clear loading option
+                    flatSelect.innerHTML = '<option value="">Select Flat</option>';
+                    
+                    if (flats.length === 0) {
+                        // If no flats are available, add disabled option with explanation
+                        const option = document.createElement('option');
+                        option.value = "";
+                        option.textContent = "No flats available in this block - Please contact admin to add flats";
+                        option.disabled = true;
+                        flatSelect.appendChild(option);
+                    } else {
+                        // Count available flats (Vacant or None status are both available)
+                        const availableFlats = flats.filter(f => f.status === 'Vacant' || f.status === 'None' || f.status === null || f.status === '');
+                        
+                        if (availableFlats.length === 0) {
+                            // All flats are occupied
+                            const option = document.createElement('option');
+                            option.value = "";
+                            option.textContent = "All flats are occupied in this block";
+                            option.disabled = true;
+                            flatSelect.appendChild(option);
+                        } else {
+                            // Show all flats - available ones are selectable, occupied ones are disabled
+                            flats.forEach(flat => {
+                                const option = document.createElement('option');
+                                option.value = flat.flat_number;
+                                // Check if flat is available (Vacant, None, null, or empty)
+                                const isAvailable = flat.status === 'Vacant' || flat.status === 'None' || flat.status === null || flat.status === '';
+                                
+                                if (!isAvailable) {
+                                    // Occupied - show as disabled
+                                    option.textContent = `${flat.flat_number} (Occupied) - Not Available`;
+                                    option.disabled = true;
+                                    option.style.color = '#6c757d';
+                                } else {
+                                    // Available - show status nicely
+                                    const displayStatus = flat.status === 'None' ? 'Available' : flat.status;
+                                    option.textContent = `${flat.flat_number} (${displayStatus})`;
+                                }
+                                flatSelect.appendChild(option);
+                            });
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching flats:', error);
+                    flatSelect.innerHTML = '<option value="">Error loading flats</option>';
+                    // Show error notification
+                    showNotification('Error loading flats. Please try again or refresh the page.', 'danger');
+                });
+        }
+    });
+    
+    // Form submission
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // First validate the form using our enhanced validation
+        if (!validateForm(this)) {
+            return;
+        }
+        
+        // Check if passwords match
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
+        if (password !== confirmPassword) {
+            showNotification('Passwords do not match', 'danger');
+            document.getElementById('confirm_password').classList.add('is-invalid');
+            return;
+        }
+        
+        // Prepare form data with file upload support
+        const formData = new FormData(this);
+        
+        // Make AJAX call to register
+        fetch('/register', {
+            method: 'POST',
+            body: formData,
+            // Don't set Content-Type header, let browser set it with boundary
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification(result.message, 'success');
+                // Redirect to login after a delay
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("login") }}';
+                }, 2000);
+            } else {
+                showNotification(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Registration failed. Please check your inputs and try again.', 'danger');
+        });
+    });
+    
+    // Function to show notifications
+    function showNotification(message, type) {
+        // Remove existing notifications
+        const existingAlerts = document.querySelectorAll('.notification-alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show notification-alert position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

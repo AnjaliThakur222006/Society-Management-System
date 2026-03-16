@@ -1,0 +1,218 @@
+
+
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Smart Society{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Admin Dashboard</h2>
+        </div>
+    </div>
+
+    <!-- Report Generation Section - Top Right -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="card-title mb-2">Comprehensive Society Report</h5>
+                            <p class="card-text text-muted mb-0">Generate detailed PDF report with analysis charts and society statistics</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{{ url_for('admin_comprehensive_report') }}" class="btn btn-primary btn-lg" target="_blank">
+                                <i class="fas fa-file-pdf me-2"></i>Generate Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ residents_count or 0 }}</h3>
+                    <p class="text-muted mb-0">Total Residents</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ paid_payments or 0 }}</h3>
+                    <p class="text-muted mb-0">Paid Payments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ pending_payments or 0 }}</h3>
+                    <p class="text-muted mb-0">Pending Payments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">₹{{ total_collection or 0 }}</h3>
+                    <p class="text-muted mb-0">Total Collection</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Events Management Card -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_events') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h5>Events Management</h5>
+                    <p class="text-muted">Manage society events ({{ event_count or 0 }} events)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_residents') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-users"></i>
+                    <h5>Residents</h5>
+                    <p class="text-muted">Manage residents list</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_complaints') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h5>Complaints</h5>
+                    <p class="text-muted">View complaint status</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_payments') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <h5>Maintenance</h5>
+                    <p class="text-muted">Payments tracking</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_parking') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-parking"></i>
+                    <h5>Parking</h5>
+                    <p class="text-muted">Slots management</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_charity') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-hands-helping"></i>
+                    <h5>Charity</h5>
+                    <p class="text-muted">Approve donations</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_reports') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar"></i>
+                    <h5>Reports</h5>
+                    <p class="text-muted">Generate reports</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_notices') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-bullhorn"></i>
+                    <h5>Notices</h5>
+                    <p class="text-muted">Post announcements</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_blocks') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-building"></i>
+                    <h5>Blocks</h5>
+                    <p class="text-muted">Manage blocks & flats</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_flats') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-home"></i>
+                    <h5>Flats</h5>
+                    <p class="text-muted">Flat status management</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_events') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h5>Events</h5>
+                    <p class="text-muted">Manage events ({{ event_count or 0 }})</p>
+                </div>
+            </div>
+        </div>
+        
+
+        
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card" data-route="{{ url_for('admin_settings') }}">
+                <div class="card-body text-center">
+                    <i class="fas fa-cog"></i>
+                    <h5>Settings</h5>
+                    <p class="text-muted">System configuration</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    speakMessage('Welcome to Admin Dashboard. Please select an option.');
+    
+    // Add click event listeners to dashboard cards
+    const dashboardCards = document.querySelectorAll('.dashboard-card');
+    dashboardCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const route = this.getAttribute('data-route');
+            if (route && route !== '#') {
+                window.location.href = route;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Parking - Tenant Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Parking Management</h2>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Parking Slot</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if parking %}
+                    <div class="parking-slot-display">
+                        <h3 class="display-4 text-primary">{{ parking[3] }}</h3>
+                        <p class="lead">Assigned Slot Number</p>
+                        <p>Type: <strong>{{ parking[4] }}</strong></p>
+                        <p>Vehicle: <strong>{{ parking[5] or "None registered" }}</strong></p>
+                        <p>Status: 
+                            <span class="badge bg-{% if parking[6] == 'Available' %}success{% elif parking[6] == 'Occupied' %}warning{% else %}secondary{% endif %}">
+                                {{ parking[6] }}
+                            </span>
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="no-parking">
+                        <i class="fas fa-parking fa-3x text-muted mb-3"></i>
+                        <h4>No Parking Slot Assigned</h4>
+                        <p class="text-muted">Contact society administration for parking allocation</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Parking Rules & Regulations</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Owners get fixed parking slots</li>
+                        <li>Tenants share visitor/temporary slots</li>
+                        <li>Register your vehicle number for security</li>
+                        <li>Do not park in unauthorized areas</li>
+                        <li>Report any parking violations</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Visitor Parking:</strong> Temporary slots available near main entrance
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Register Your Vehicle</h5>
+                </div>
+                <div class="card-body">
+                    <form id="vehicleForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="vehicleNumber" class="form-label">Vehicle Number</label>
+                                <input type="text" class="form-control" id="vehicleNumber" placeholder="e.g., MH12AB1234" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="vehicleType" class="form-label">Vehicle Type</label>
+                                <select class="form-select" id="vehicleType" required>
+                                    <option value="">Select Vehicle Type</option>
+                                    <option value="Car">Car</option>
+                                    <option value="Bike">Bike</option>
+                                    <option value="Scooter">Scooter</option>
+                                    <option value="Truck">Truck</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-car"></i> Register Vehicle
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Vehicle Registration History Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4 class="mb-3">Vehicle Registration History</h4>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle Number</th>
+                                    <th>Vehicle Type</th>
+                                    <th>Registration Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if vehicle_history %}
+                                    {% for vehicle in vehicle_history %}
+                                    <tr>
+                                        <td>{{ vehicle[0] }}</td>
+                                        <td>{{ vehicle[1] }}</td>
+                                        <td>{{ vehicle[2] }}</td>
+                                        <td>
+                                            <span class="badge bg-success">Registered</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No vehicle registration history found</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Vehicle form submission
+    document.getElementById('vehicleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        if (validateForm(form)) {
+            const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
+            const vehicleType = document.getElementById('vehicleType').value;
+            
+            // Send data to server
+            const formData = new FormData();
+            formData.append('vehicle_number', vehicleNumber);
+            formData.append('vehicle_type', vehicleType);
+            
+            showNotification('Registering vehicle...', 'info');
+            
+            fetch('/tenant/parking/register', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    form.reset();
+                    speakMessage(data.message);
+                    // Reload the page to show updated information
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showNotification(data.message, 'danger');
+                    speakMessage(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Registration failed. Please try again.', 'danger');
+                speakMessage('Registration failed');
+            });
+        }
+    });
+    
+    // Form validation function
+    function validateForm(form) {
+        const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
+        const vehicleType = document.getElementById('vehicleType').value;
+        
+        if (!vehicleNumber) {
+            showNotification('Please enter vehicle number', 'warning');
+            return false;
+        }
+        
+        if (!vehicleType) {
+            showNotification('Please select vehicle type', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Function to show notifications
+    function showNotification(message, type) {
+        // Remove existing notifications
+        const existingAlerts = document.querySelectorAll('.notification-alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show notification-alert position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    speakMessage('Parking management page loaded. View your assigned slot and register your vehicle.');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Tenant Complaints - Smart Society Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">Manage Complaints</h1>
+            
+            <!-- Complaint Submission Form -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Submit New Complaint</h6>
+                </div>
+                <div class="card-body">
+                    <form id="complaintForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="complaintCategory">Category *</label>
+                                    <select class="form-control" id="complaintCategory" required>
+                                        <option value="">Select Category</option>
+                                        <option value="Water">Water</option>
+                                        <option value="Electricity">Electricity</option>
+                                        <option value="Lift">Lift</option>
+                                        <option value="Noise">Noise</option>
+                                        <option value="Maintenance">Maintenance</option>
+                                        <option value="Parking">Parking</option>
+                                        <option value="Security">Security</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="complaintPriority">Priority</label>
+                                    <select class="form-control" id="complaintPriority">
+                                        <option value="Normal">Normal</option>
+                                        <option value="High">High</option>
+                                        <option value="Urgent">Urgent</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="complaintDescription">Description *</label>
+                            <textarea class="form-control" id="complaintDescription" rows="4" placeholder="Describe your complaint in detail..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Complaint</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Complaint History -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Complaint History</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="complaintTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>AI Score</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for complaint in complaints %}
+                                <tr id="complaint-row-{{ complaint.0 }}">
+                                    <td class="complaint-id">{{ complaint.0 }}</td>
+                                    <td class="complaint-category">{{ complaint.1 }}</td>
+                                    <td class="complaint-description text-truncate" style="max-width: 200px;" title="{{ complaint.2 }}">{{ complaint.2[:50] }}{% if complaint.2|length > 50 %}...{% endif %}</td>
+                                    <td class="complaint-date">{{ complaint.3 }}</td>
+                                    <td class="complaint-status">
+                                        <span class="badge 
+                                            {% if complaint.4 == 'Open' %}bg-warning
+                                            {% elif complaint.4 == 'Assigned' %}bg-info
+                                            {% elif complaint.4 == 'Resolved' %}bg-success
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ complaint.4 }}
+                                        </span>
+                                    </td>
+                                    <td class="complaint-priority">
+                                        <span class="badge 
+                                            {% if complaint.5 == 'Urgent' %}bg-danger
+                                            {% elif complaint.5 == 'High' %}bg-warning
+                                            {% elif complaint.5 == 'Normal' %}bg-success
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ complaint.5 }}
+                                        </span>
+                                    </td>
+                                    <td class="complaint-ai-score">{{ complaint.6 }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary edit-complaint" 
+                                                data-id="{{ complaint.0 }}" 
+                                                data-category="{{ complaint.1 }}" 
+                                                data-description="{{ complaint.2 }}" 
+                                                data-priority="{{ complaint.5 }}">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-complaint ml-1" 
+                                                data-id="{{ complaint.0 }}" 
+                                                data-description="{{ complaint.2 }}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center">No complaints submitted yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Welcome message for accessibility
+    setTimeout(() => {
+        speakMessage('Welcome to Complaint Management. Please submit your complaint or use voice command.');
+    }, 1000);
+    
+    // Voice command functionality
+    const voiceCommandBtn = document.getElementById('voice-command-btn');
+    const voiceStatus = document.getElementById('voice-status');
+    const voiceStatusText = document.getElementById('voice-status-text');
+    
+    let recognition;
+    let isListening = false;
+    
+    // Check if browser supports speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = function() {
+            isListening = true;
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-info';
+            voiceStatusText.textContent = 'Listening... Please speak now.';
+        };
+        
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript.toLowerCase().trim();
+            voiceStatusText.textContent = 'Command recognized: ' + transcript;
+            
+            // Process voice command
+            processVoiceCommand(transcript);
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 2000);
+        };
+        
+        recognition.onerror = function(event) {
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-danger';
+            voiceStatusText.textContent = 'Error occurred: ' + event.error;
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 3000);
+        };
+        
+        recognition.onend = function() {
+            isListening = false;
+        };
+        
+        voiceCommandBtn.addEventListener('click', function() {
+            if (isListening) {
+                recognition.stop();
+                voiceCommandBtn.innerHTML = '<i class="fas fa-microphone"></i> Voice Command';
+            } else {
+                recognition.start();
+                voiceCommandBtn.innerHTML = '<i class="fas fa-microphone-alt"></i> Stop Listening';
+            }
+        });
+    } else {
+        voiceCommandBtn.disabled = true;
+        voiceCommandBtn.title = 'Voice commands not supported in this browser';
+        voiceStatus.style.display = 'block';
+        voiceStatus.className = 'alert alert-warning';
+        voiceStatusText.textContent = 'Voice commands are not supported in this browser. Please use Chrome or Edge.';
+    }
+    
+    function processVoiceCommand(command) {
+        // Check for common commands
+        if (command.includes('submit') || command.includes('complaint') || command.includes('new complaint')) {
+            speakMessage('Please fill in the complaint details in the form.');
+            document.getElementById('complaintCategory').focus();
+        } else if (command.includes('category') || command.includes('type')) {
+            speakMessage('Please select the complaint category from the dropdown.');
+            document.getElementById('complaintCategory').focus();
+        } else if (command.includes('description') || command.includes('detail')) {
+            speakMessage('Please enter the complaint description in the text area.');
+            document.getElementById('complaintDescription').focus();
+        } else if (command.includes('priority')) {
+            speakMessage('Please select the priority level from the dropdown.');
+            document.getElementById('complaintPriority').focus();
+        } else if (command.includes('submit') || command.includes('save')) {
+            speakMessage('Submitting the complaint form.');
+            document.getElementById('complaintForm').submit();
+        } else {
+            // If no match found, show error
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-warning';
+            voiceStatusText.textContent = 'Command not recognized: "' + command + '". Try saying "submit complaint", "new complaint", or "save complaint".';
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    // Add hidden field for complaint ID to track edit mode
+    // Add hidden field for complaint ID to track edit mode
+    const form = document.getElementById('complaintForm');
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.id = 'complaintId';
+    hiddenInput.name = 'id';
+    hiddenInput.value = '';
+    form.appendChild(hiddenInput);
+    
+    // Reset form to add mode when clicking reset or when page reloads
+    function resetFormToDefault() {
+        document.getElementById('complaintId').value = '';
+        const submitButton = document.querySelector('#complaintForm button[type="submit"]');
+        submitButton.textContent = 'Submit Complaint';
+        submitButton.classList.remove('btn-warning');
+        submitButton.classList.add('btn-primary');
+    }
+    
+    // Edit complaint functionality
+    document.querySelectorAll('.edit-complaint').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const category = this.getAttribute('data-category');
+            const description = this.getAttribute('data-description');
+            const priority = this.getAttribute('data-priority');
+            
+            // Fill the form with current values
+            document.getElementById('complaintId').value = id;
+            document.getElementById('complaintCategory').value = category;
+            document.getElementById('complaintDescription').value = description;
+            document.getElementById('complaintPriority').value = priority;
+            
+            // Change button text to Update
+            const submitButton = document.querySelector('#complaintForm button[type="submit"]');
+            submitButton.textContent = 'Update Complaint';
+            submitButton.classList.add('btn-warning');
+            submitButton.classList.remove('btn-primary');
+        });
+    });
+    
+    // Delete complaint functionality
+    document.querySelectorAll('.delete-complaint').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const description = this.getAttribute('data-description');
+            
+            if (confirm(`Are you sure you want to delete complaint: "${description.substring(0, 50)}${description.length > 50 ? '...' : ''}"?`)) {
+                // Send AJAX request to delete complaint
+                fetch(`/tenant/complaints/delete/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        // Remove the row from the table
+                        const row = document.querySelector(`#complaint-row-${id}`);
+                        if (row) {
+                            row.remove();
+                        }
+                        
+                        // Check if table is empty and show no complaints message
+                        const tableBody = document.querySelector('#complaintTable tbody');
+                        if (tableBody.children.length === 1 && tableBody.children[0].querySelector('td[colspan]')) {
+                            // Already has the no complaints message
+                        } else if (tableBody.children.length === 0) {
+                            tableBody.innerHTML = `<tr><td colspan="8" class="text-center">No complaints submitted yet</td></tr>`;
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the complaint.');
+                });
+            }
+        });
+    });
+    
+    // Handle form submission for both add and update
+    document.getElementById('complaintForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const complaintId = document.getElementById('complaintId').value;
+        const complaintCategory = document.getElementById('complaintCategory').value;
+        const complaintDescription = document.getElementById('complaintDescription').value;
+        const complaintPriority = document.getElementById('complaintPriority').value;
+        
+        let url, method, body;
+        
+        if (complaintId) {
+            // Update existing complaint
+            url = `/tenant/complaints/update/${complaintId}`;
+            method = 'POST';
+            body = `category=${encodeURIComponent(complaintCategory)}&description=${encodeURIComponent(complaintDescription)}&priority=${encodeURIComponent(complaintPriority)}`;
+        } else {
+            // Create new complaint
+            url = '/tenant/complaints/submit';
+            method = 'POST';
+            body = `category=${encodeURIComponent(complaintCategory)}&description=${encodeURIComponent(complaintDescription)}&priority=${encodeURIComponent(complaintPriority)}`;
+        }
+        
+        // Send AJAX request
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('complaintForm').reset();
+                resetFormToDefault();
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the complaint.');
+        });
+    });
+    
+    // Initialize form to default state
+    resetFormToDefault();
+    });
+</script>
+{% endblock %}
