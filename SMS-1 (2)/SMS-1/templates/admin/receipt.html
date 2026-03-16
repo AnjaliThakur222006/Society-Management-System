@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt - {{ receipt.receipt_number }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            body {
+                margin: 0;
+                padding: 15mm;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .card {
+                box-shadow: none;
+                border: none;
+            }
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        .receipt-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+            padding: 15mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        @media screen {
+            .receipt-container {
+                margin: 20px;
+            }
+        }
+        .receipt-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .receipt-details {
+            margin: 15px 0;
+        }
+        .total-section {
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        .stamp {
+            position: relative;
+        }
+        .stamp::after {
+            content: "PAID";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 40px;
+            font-weight: bold;
+            color: rgba(40, 167, 69, 0.3);
+            opacity: 0.7;
+        }
+        .section-title {
+            border-left: 4px solid #007bff;
+            padding-left: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="card">
+            <div class="card-body">
+                <div class="receipt-header text-center">
+                    <h1 class="display-5 fw-bold">{{ receipt.society_name or "SOCIETY MANAGEMENT SYSTEM" }}</h1>
+                    <h2 class="mb-3">Payment Receipt</h2>
+                    <p class="lead mb-1">{{ receipt.society_address or "123 Society Address, City, State - 123456" }}</p>
+                    <p class="mb-0">Phone: {{ receipt.society_phone or "+91 9876543210" }} | Email: {{ receipt.society_email or "info@society.com" }}</p>
+                </div>
+
+                <div class="row receipt-details">
+                    <div class="col-md-6">
+                        <h4 class="section-title">Receipt Details</h4>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Receipt No:</strong></td>
+                                <td>{{ receipt.receipt_number }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Date:</strong></td>
+                                <td>{{ receipt.payment_date or "N/A" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if receipt.status == 'Paid' %}success{% else %}warning{% endif %}">
+                                        {{ receipt.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h4 class="section-title">Resident Details</h4>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ receipt.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Flat No:</strong></td>
+                                <td>{{ receipt.flat_number }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Payment Method:</strong></td>
+                                <td>{{ receipt.payment_method or "N/A" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="stamp">
+                    <h4 class="section-title mb-3">Charges Summary</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Maintenance Charges (Quarterly)</td>
+                                    <td class="text-end">₹{{ "%.2f"|format(receipt.amount) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Late Fees</td>
+                                    <td class="text-end">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Other Charges</td>
+                                    <td class="text-end">₹0.00</td>
+                                </tr>
+                                <tr class="table-active fw-bold">
+                                    <td>Total Amount</td>
+                                    <td class="text-end">₹{{ "%.2f"|format(receipt.amount) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="total-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="section-title">Amount in Words</h5>
+                            <p class="fw-bold fs-5">Rupees {{ "%.2f"|format(receipt.amount)|int }} Only</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <h5 class="section-title">Total Amount</h5>
+                            <h3 class="text-primary fw-bold">₹{{ "%.2f"|format(receipt.amount) }}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-5 pt-3 border-top">
+                    <div class="col-md-6">
+                        <h5 class="section-title">Important Notes</h5>
+                        <ul>
+                            <li>This is a computer-generated receipt and does not require a signature</li>
+                            <li>Please retain this receipt for future reference</li>
+                            <li>Subject to society rules and regulations</li>
+                            <li>For any queries, contact the society office during working hours</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <h5 class="section-title">Authorization</h5>
+                        <p class="mt-4 pt-3">___________________________</p>
+                        <p class="fw-bold">Secretary<br>Society Management System</p>
+                    </div>
+                </div>
+
+                <div class="text-center no-print mt-4">
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print Receipt
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.close()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>

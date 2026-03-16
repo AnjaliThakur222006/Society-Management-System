@@ -1,0 +1,134 @@
+@startuml Activity Diagram - Society Management System
+
+title Society Management System - Activity Diagram
+
+start
+
+:User accesses system;
+
+if (User Type?) then (Admin)
+    :Admin Dashboard;
+    if (Admin Action?) then (Manage Users)
+        :View/Add/Edit/Delete Residents;
+        :Manage User Roles;
+    elseif (Manage Blocks & Flats)
+        :Add/Edit Blocks;
+        :Add/Edit Flats;
+        :Assign Flats to Residents;
+    elseif (Manage Notices)
+        :Create/Edit/Delete Notices;
+        :Set Notice Priority;
+    elseif (Manage Events)
+        :Create/Edit/Delete Events;
+        :Upload Event Images;
+    elseif (Manage Complaints)
+        :View All Complaints;
+        :Assign Complaints;
+        :Update Complaint Status;
+        :AI Priority Classification;
+    elseif (Manage Bills)
+        :Generate Monthly Bills;
+        :Calculate Late Fines;
+        :Mark Bills as Paid;
+    elseif (Manage Parking)
+        :Allocate Parking Slots;
+        :Register Vehicles;
+        :Track Parking Status;
+    elseif (Manage Charity)
+        :Create Charity Campaigns;
+        :Track Donations;
+        :Generate Charity Reports;
+    elseif (Generate Reports)
+        :Payment Reports;
+        :Maintenance Reports;
+        :Visitor Reports;
+        :Complaint Reports;
+    endif
+
+elseif (Resident/Owner)
+    :Resident Dashboard;
+    if (Resident Action?) then (Profile Management)
+        :Update Personal Info;
+        :Change Profile Picture;
+    elseif (Visitor Management)
+        :Register New Visitors;
+        :View Visitor History;
+        :Update Visitor Status;
+    elseif (Complaint Management)
+        :Submit New Complaints;
+        :View Complaint Status;
+        :Update Existing Complaints;
+    elseif (Maintenance Bills)
+        :View Pending Bills;
+        :Pay Bills Online;
+        :Download Payment Receipts;
+        :View Payment History;
+    elseif (Events)
+        :View Upcoming Events;
+        :Register for Events;
+    elseif (Charity)
+        :View Charity Campaigns;
+        :Make Donations;
+    elseif (Emergency)
+        :Log Emergency Incidents;
+        :View Emergency Contacts;
+    elseif (Notices)
+        :View Society Notices;
+    endif
+
+elseif (Tenant)
+    :Tenant Dashboard;
+    if (Tenant Action?) then (Profile Management)
+        :Update Personal Info;
+        :Change Profile Picture;
+    elseif (Visitor Management)
+        :Register New Visitors;
+        :View Visitor History;
+        :Update Visitor Status;
+    elseif (Complaint Management)
+        :Submit New Complaints;
+        :View Complaint Status;
+        :Update Existing Complaints;
+    elseif (Maintenance Bills)
+        :View Pending Bills;
+        :Pay Bills Online;
+        :Download Payment Receipts;
+        :View Payment History;
+    elseif (Events)
+        :View Upcoming Events;
+        :Register for Events;
+    elseif (Charity)
+        :View Charity Campaigns;
+        :Make Donations;
+    elseif (Emergency)
+        :Log Emergency Incidents;
+        :View Emergency Contacts;
+    elseif (Notices)
+        :View Society Notices;
+    endif
+
+elseif (Security Guard)
+    :Security Dashboard;
+    if (Security Action?) then (Visitor Management)
+        :Check Visitor Entries;
+        :Approve/Reject Visitors;
+        :Mark Visitor Exit;
+        :Upload Visitor Photos;
+    elseif (Delivery Management)
+        :Receive Deliveries;
+        :Notify Residents;
+        :Mark Deliveries as Delivered;
+    elseif (Emergency Response)
+        :View Emergency Logs;
+        :Respond to Emergencies;
+        :Update Emergency Status;
+    elseif (Parking Control)
+        :Monitor Parking Slots;
+        :Issue Parking Tickets;
+    endif
+endif
+
+:Logout;
+stop
+
+@enduml

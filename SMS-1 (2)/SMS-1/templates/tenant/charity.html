@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Tenant Charity - Smart Society Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">Charity Donations</h1>
+            
+            <!-- Charity Submission Form -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Submit Charity Donation</h6>
+                </div>
+                <div class="card-body">
+                    <form id="charityForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="itemType">Item Type *</label>
+                                    <select class="form-control" id="itemType" required>
+                                        <option value="">Select Item Type</option>
+                                        <option value="Clothes">Clothes</option>
+                                        <option value="Food">Food</option>
+                                        <option value="Books">Books</option>
+                                        <option value="Toys">Toys</option>
+                                        <option value="Furniture">Furniture</option>
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="quantity">Quantity *</label>
+                                    <input type="number" class="form-control" id="quantity" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="itemCondition">Condition</label>
+                                    <select class="form-control" id="itemCondition">
+                                        <option value="Good">Good</option>
+                                        <option value="Very Good">Very Good</option>
+                                        <option value="Excellent">Excellent</option>
+                                        <option value="New">New</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="charityDescription">Description</label>
+                            <textarea class="form-control" id="charityDescription" rows="3" placeholder="Describe the items you want to donate..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Donation</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Charity History -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Donation History</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="charityTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Item Type</th>
+                                    <th>Quantity</th>
+                                    <th>Description</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for donation in donations %}
+                                <tr>
+                                    <td>{{ donation[2] }}</td>
+                                    <td>{{ donation[3] }}</td>
+                                    <td>{{ donation[4][:30] }}{% if donation[4]|length > 30 %}...{% endif %}</td>
+                                    <td>{{ donation[6] or 'Not Scheduled' }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if donation[5] == 'Pending' %}bg-warning
+                                            {% elif donation[5] == 'Approved' %}bg-success
+                                            {% elif donation[5] == 'Picked' %}bg-info
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ donation[5] }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No charity donations submitted yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Welcome message for accessibility
+    setTimeout(() => {
+        speakMessage('Welcome to Charity Donations. Please submit your donation or use voice command.');
+    }, 1000);
+    
+    // Voice command functionality
+    const voiceCommandBtn = document.getElementById('voice-command-btn');
+    const voiceStatus = document.getElementById('voice-status');
+    const voiceStatusText = document.getElementById('voice-status-text');
+    
+    let recognition;
+    let isListening = false;
+    
+    // Check if browser supports speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = function() {
+            isListening = true;
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-info';
+            voiceStatusText.textContent = 'Listening... Please speak now.';
+        };
+        
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript.toLowerCase().trim();
+            voiceStatusText.textContent = 'Command recognized: ' + transcript;
+            
+            // Process voice command
+            processVoiceCommand(transcript);
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 2000);
+        };
+        
+        recognition.onerror = function(event) {
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-danger';
+            voiceStatusText.textContent = 'Error occurred: ' + event.error;
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 3000);
+        };
+        
+        recognition.onend = function() {
+            isListening = false;
+        };
+        
+        voiceCommandBtn.addEventListener('click', function() {
+            if (isListening) {
+                recognition.stop();
+                voiceCommandBtn.innerHTML = '<i class="fas fa-microphone"></i> Voice Command';
+            } else {
+                recognition.start();
+                voiceCommandBtn.innerHTML = '<i class="fas fa-microphone-alt"></i> Stop Listening';
+            }
+        });
+    } else {
+        voiceCommandBtn.disabled = true;
+        voiceCommandBtn.title = 'Voice commands not supported in this browser';
+        voiceStatus.style.display = 'block';
+        voiceStatus.className = 'alert alert-warning';
+        voiceStatusText.textContent = 'Voice commands are not supported in this browser. Please use Chrome or Edge.';
+    }
+    
+    function processVoiceCommand(command) {
+        // Check for common commands
+        if (command.includes('submit') || command.includes('donation') || command.includes('charity') || command.includes('new donation')) {
+            speakMessage('Please fill in the donation details in the form.');
+            document.getElementById('itemType').focus();
+        } else if (command.includes('item') || command.includes('type')) {
+            speakMessage('Please select the item type from the dropdown.');
+            document.getElementById('itemType').focus();
+        } else if (command.includes('quantity') || command.includes('number')) {
+            speakMessage('Please enter the quantity of items.');
+            document.getElementById('quantity').focus();
+        } else if (command.includes('description') || command.includes('detail')) {
+            speakMessage('Please enter the description of the items.');
+            document.getElementById('charityDescription').focus();
+        } else if (command.includes('submit') || command.includes('donate')) {
+            speakMessage('Submitting the donation form.');
+            document.getElementById('charityForm').submit();
+        } else {
+            // If no match found, show error
+            voiceStatus.style.display = 'block';
+            voiceStatus.className = 'alert alert-warning';
+            voiceStatusText.textContent = 'Command not recognized: "' + command + '". Try saying "submit donation", "new donation", or "donate items".';
+            
+            setTimeout(() => {
+                voiceStatus.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    document.getElementById('charityForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const itemType = document.getElementById('itemType').value;
+        const quantity = document.getElementById('quantity').value;
+        const itemCondition = document.getElementById('itemCondition').value;
+        const description = document.getElementById('charityDescription').value;
+        
+        // Send AJAX request to submit charity
+        fetch('/tenant/charity/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `item_type=${encodeURIComponent(itemType)}&quantity=${encodeURIComponent(quantity)}&description=${encodeURIComponent(description)}&condition=${encodeURIComponent(itemCondition)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('charityForm').reset();
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while submitting the charity donation.');
+        });
+    });
+});
+</script>
+{% endblock %}

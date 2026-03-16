@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Help - Smart Society{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-ambulance"></i> 🚨 EMERGENCY HELP</h3>
+                    <p class="mb-0">Offline-first emergency communication system</p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> <strong>Important:</strong> These emergency features work without internet. Just make a call or send an SMS.
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Dynamic Emergency Contacts -->
+                        {% for contact in emergency_contacts %}
+                        {% set name = contact[0] %}
+                        {% set type = contact[1] %}
+                        {% set phone = contact[2] %}
+                        
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 border-2 {% if type == 'Admin' %}border-danger{% elif type == 'Security' %}border-warning{% elif type == 'Ambulance' %}border-info{% elif type == 'Fire' %}border-secondary{% elif type == 'Police' %}border-dark{% else %}border-success{% endif %}">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title {% if type == 'Admin' %}text-danger{% elif type == 'Security' %}text-warning{% elif type == 'Ambulance' %}text-info{% elif type == 'Fire' %}text-secondary{% elif type == 'Police' %}text-dark{% else %}text-success{% endif %}">
+                                        {% if type == 'Admin' %}<i class="fas fa-user-shield fa-2x"></i>
+                                        {% elif type == 'Security' %}<i class="fas fa-shield-alt fa-2x"></i>
+                                        {% elif type == 'Ambulance' %}<i class="fas fa-ambulance fa-2x"></i>
+                                        {% elif type == 'Fire' %}<i class="fas fa-fire fa-2x"></i>
+                                        {% elif type == 'Police' %}<i class="fas fa-balance-scale fa-2x"></i>
+                                        {% elif type == 'Maintenance' %}<i class="fas fa-tools fa-2x"></i>
+                                        {% elif type == 'Doctor' %}<i class="fas fa-user-md fa-2x"></i>
+                                        {% else %}<i class="fas fa-phone fa-2x"></i>{% endif %}
+                                    </h5>
+                                    <h5 class="card-title">{{ name }}</h5>
+                                    <p class="card-text">Emergency contact for {{ type }} services</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="tel:{{ phone }}" class="btn {% if type == 'Admin' %}btn-danger{% elif type == 'Security' %}btn-warning{% elif type == 'Ambulance' %}btn-info{% elif type == 'Fire' %}btn-secondary{% elif type == 'Police' %}btn-dark{% else %}btn-success{% endif %} btn-lg">
+                                            <i class="fas fa-phone"></i> Call {{ type }}
+                                        </a>
+                                        <a href="sms:{{ phone }}?body=EMERGENCY%20ALERT!%0ASociety:%20Smart%20Society%0AUser:%20{{ session.name or 'Unknown' }}%0AFlat:%20{{ session.flat_number or 'Unknown' }}%0AType:%20{{ type }}%0ADescription:%20__%0ARequest%20immediate%20assistance." class="btn btn-outline-{% if type == 'Admin' %}danger{% elif type == 'Security' %}warning{% elif type == 'Ambulance' %}info{% elif type == 'Fire' %}secondary{% elif type == 'Police' %}dark{% else %}success{% endif %} btn-lg">
+                                            <i class="fas fa-comment-sms"></i> SMS {{ type }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Emergency Log Button -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 border-success border-2">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-success"><i class="fas fa-clipboard-list fa-2x"></i></h5>
+                                    <h5 class="card-title">Log Emergency</h5>
+                                    <p class="card-text">Record an emergency incident for administrative review</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('emergency_log') }}" class="btn btn-success btn-lg">
+                                            <i class="fas fa-plus"></i> Log New Emergency
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-light mt-4" role="alert">
+                        <h5><i class="fas fa-lightbulb"></i> How it works:</h5>
+                        <ul>
+                            <li><strong>CALL:</strong> Tap the "Call" button to make a direct phone call</li>
+                            <li><strong>SMS:</strong> Tap the "SMS" button to send a pre-filled emergency message</li>
+                            <li>Both features work <strong>without internet</strong> - only require mobile network</li>
+                            <li>Pre-filled SMS messages save time during emergencies</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Simple script to enhance user experience
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click feedback for emergency buttons
+        const emergencyButtons = document.querySelectorAll('.btn-danger, .btn-warning, .btn-info, .btn-secondary, .btn-dark, .btn-success');
+        emergencyButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Add visual feedback
+                this.classList.add('active');
+                setTimeout(() => {
+                    this.classList.remove('active');
+                }, 200);
+            });
+        });
+    });
+</script>
+{% endblock %}

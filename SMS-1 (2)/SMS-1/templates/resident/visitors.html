@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Visitors - Resident Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Visitor Management</h2>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Register New Visitor</h5>
+                </div>
+                <div class="card-body">
+                    <form id="visitorForm">
+                        <div class="mb-3">
+                            <label for="visitorName" class="form-label">Visitor Name</label>
+                            <input type="text" class="form-control" id="visitorName" required pattern="[a-zA-Z\s]+" title="Name should contain only letters and spaces">
+                        </div>
+                        <div class="mb-3">
+                            <label for="visitorContact" class="form-label">Contact Number</label>
+                            <input type="tel" class="form-control" id="visitorContact" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number">
+                        </div>
+                        <div class="mb-3">
+                            <label for="visitPurpose" class="form-label">Purpose of Visit</label>
+                            <select class="form-select" id="visitPurpose" required>
+                                <option value="">Select Purpose</option>
+                                <option value="Personal">Personal</option>
+                                <option value="Delivery">Delivery</option>
+                                <option value="Service">Service</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="otherPurposeDiv" style="display: none;">
+                            <label for="otherPurpose" class="form-label">Specify Purpose</label>
+                            <input type="text" class="form-control" id="otherPurpose">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus"></i> Register Visitor
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Register all visitors before their arrival</li>
+                        <li>Provide accurate contact information</li>
+                        <li>Visitors will be notified to security</li>
+                        <li>Security will verify and allow entry</li>
+                        <li>Mark exit when visitor leaves</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Visitors must be registered at least 30 minutes before arrival
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Visitor History</h4>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Purpose</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for visitor in visitors %}
+                                <tr>
+                                    <td>{{ visitor[2] }}</td>
+                                    <td>{{ visitor[3] }}</td>
+                                    <td>{{ visitor[4] }}</td>
+                                    <td>{{ visitor[5] }}</td>
+                                    <td>{{ visitor[6] }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if visitor[7] == 'Pending' %}warning{% elif visitor[7] == 'Approved' %}success{% elif visitor[7] == 'Rejected' %}danger{% elif visitor[7] == 'Exited' %}secondary{% endif %}">
+                                            {{ visitor[7] }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle other purpose field
+    document.getElementById('visitPurpose').addEventListener('change', function() {
+        const otherPurposeDiv = document.getElementById('otherPurposeDiv');
+        if (this.value === 'Other') {
+            otherPurposeDiv.style.display = 'block';
+        } else {
+            otherPurposeDiv.style.display = 'none';
+        }
+    });
+    
+    // Visitor form submission
+    document.getElementById('visitorForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        // First validate the form using our enhanced validation
+        if (!validateForm(form)) {
+            return;
+        }
+        
+        // Get form values
+        const visitorName = document.getElementById('visitorName').value.trim();
+            const visitorContact = document.getElementById('visitorContact').value.trim();
+            const visitPurpose = document.getElementById('visitPurpose').value;
+            const otherPurpose = document.getElementById('otherPurpose').value.trim();
+            
+            // Use "Other" purpose if selected
+            const finalPurpose = visitPurpose === 'Other' ? otherPurpose : visitPurpose;
+            
+            // Send data to server
+            const formData = new FormData();
+            formData.append('visitor_name', visitorName);
+            formData.append('contact', visitorContact);
+            formData.append('purpose', finalPurpose);
+            
+            // Show processing message
+            showNotification('Registering visitor...', 'info');
+            
+            fetch('/resident/visitors/add', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    form.reset();
+                    document.getElementById('otherPurposeDiv').style.display = 'none';
+                    speakMessage('Visitor registered successfully');
+                    
+                    // Reload the page to show updated visitor history
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showNotification(data.message, 'danger');
+                    speakMessage('Registration failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Registration failed. Please try again.', 'danger');
+                speakMessage('Registration failed');
+            });
+    });
+    
+    // Form validation function
+    function validateForm(form) {
+        const visitorName = document.getElementById('visitorName').value.trim();
+        const visitorContact = document.getElementById('visitorContact').value.trim();
+        const visitPurpose = document.getElementById('visitPurpose').value;
+        const otherPurpose = document.getElementById('otherPurpose').value.trim();
+        
+        if (!visitorName) {
+            showNotification('Please enter visitor name', 'warning');
+            return false;
+        }
+        
+        // Validate contact (should be 10 digits)
+        const contactDigits = visitorContact.replace(/\D/g, '');
+        if (contactDigits.length !== 10) {
+            showNotification('Please enter a valid 10-digit phone number', 'warning');
+            return false;
+        }
+        
+        if (!visitPurpose) {
+            showNotification('Please select purpose of visit', 'warning');
+            return false;
+        }
+        
+        if (visitPurpose === 'Other' && !otherPurpose) {
+            showNotification('Please specify the purpose of visit', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    speakMessage('Visitor management page loaded. You can register new visitors or view visitor history.');
+});
+</script>
+{% endblock %}

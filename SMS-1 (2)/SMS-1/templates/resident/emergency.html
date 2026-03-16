@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency - Resident Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Emergency Services</h2>
+                <div>
+                    <span class="me-2">Connection:</span>
+                    <span id="connectionStatus" class="badge bg-success">Online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger text-center">
+                <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Emergency Help Center</h4>
+                <p class="mb-0">In case of emergency, press the appropriate button below</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <button class="btn btn-danger btn-feature emergency-btn w-100 h-100 py-4" 
+                    data-emergency-type="Medical" data-voice="Calling ambulance service 108">
+                <i class="fas fa-ambulance fa-3x mb-3"></i>
+                <h3 class="mb-2">Medical Emergency</h3>
+                <p class="mb-0">Call Ambulance - 108</p>
+            </button>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <button class="btn btn-danger btn-feature emergency-btn w-100 h-100 py-4" 
+                    data-emergency-type="Police" data-voice="Calling police service 112">
+                <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                <h3 class="mb-2">Police Emergency</h3>
+                <p class="mb-0">Call Police - 112</p>
+            </button>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <button class="btn btn-danger btn-feature emergency-btn w-100 h-100 py-4" 
+                    data-emergency-type="Fire" data-voice="Calling fire service 101">
+                <i class="fas fa-fire-extinguisher fa-3x mb-3"></i>
+                <h3 class="mb-2">Fire Emergency</h3>
+                <p class="mb-0">Call Fire Brigade - 101</p>
+            </button>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <button class="btn btn-warning btn-feature w-100 py-3" 
+                    data-emergency-type="SMS" data-voice="Sending SMS for emergency">
+                <i class="fas fa-sms fa-2x me-2"></i>
+                Send Emergency SMS
+            </button>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <button class="btn btn-success btn-feature w-100 py-3" 
+                    data-emergency-type="WhatsApp" data-voice="Sending WhatsApp message for emergency">
+                <i class="fab fa-whatsapp fa-2x me-2"></i>
+                Send WhatsApp Message
+            </button>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Emergency Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li><strong>Stay Calm:</strong> Take a deep breath and remain as calm as possible</li>
+                        <li><strong>Press Button:</strong> Select the appropriate emergency service above</li>
+                        <li><strong>Speak Clearly:</strong> When connected, clearly explain your situation</li>
+                        <li><strong>Provide Location:</strong> Be ready to share your flat number and landmark</li>
+                        <li><strong>Follow Instructions:</strong> Listen carefully to the emergency operator</li>
+                        <li><strong>Inform Security:</strong> Notify security guard if possible</li>
+                    </ol>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Note:</strong> WhatsApp works only when internet is available. SMS works without internet.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emergency Confirmation Modal -->
+<div class="modal fade" id="emergencyModal" tabindex="-1" aria-labelledby="emergencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="emergencyModalLabel">Confirm Emergency</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h4>Emergency Alert</h4>
+                <p>You are about to report a <span id="emergencyTypeDisplay"></span> emergency.</p>
+                <p>Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmEmergencyBtn">Yes, Call for Help</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Emergency button handlers
+    document.querySelectorAll('.emergency-btn, .btn-warning, .btn-success').forEach(button => {
+        button.addEventListener('click', function() {
+            const emergencyType = this.getAttribute('data-emergency-type');
+            document.getElementById('emergencyTypeDisplay').textContent = emergencyType;
+            document.getElementById('confirmEmergencyBtn').setAttribute('data-emergency-type', emergencyType);
+            
+            const modal = new bootstrap.Modal(document.getElementById('emergencyModal'));
+            modal.show();
+        });
+    });
+    
+    // Confirm emergency button
+    document.getElementById('confirmEmergencyBtn').addEventListener('click', function() {
+        const emergencyType = this.getAttribute('data-emergency-type');
+        
+        // Check connection status
+        const isOnline = checkConnectionStatus();
+        
+        if (isOnline) {
+            // Online mode - send to server
+            // In a real app, this would send data to the server
+            showNotification(`${emergencyType} emergency reported successfully!`, 'success');
+        } else {
+            // Offline mode - store locally
+            triggerOfflineEmergency(emergencyType);
+        }
+        
+        // Speak the appropriate message
+        const voiceMessage = this.closest('.btn').getAttribute('data-voice');
+        if (voiceMessage) {
+            speakMessage(voiceMessage);
+        }
+        
+        // Close modal
+        bootstrap.Modal.getInstance(document.getElementById('emergencyModal')).hide();
+        
+        // In a real implementation, we would make actual calls/SMS/WhatsApp
+        // For demonstration, we're just showing notifications
+    });
+    
+    // Check connection status periodically
+    setInterval(checkConnectionStatus, 5000);
+    
+    // Sync pending emergencies when coming online
+    window.addEventListener('online', syncPendingEmergencies);
+    
+    speakMessage('Emergency services page loaded. Please select an emergency option if needed.');
+});
+</script>
+{% endblock %}
